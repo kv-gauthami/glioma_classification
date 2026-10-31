@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier 
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
 
 
 from data_loader import TARGET_COL
@@ -44,6 +45,8 @@ def build_models():
         "Decision Tree": DecisionTreeClassifier(random_state=RANDOM_STATE),
 
         "KNN": Pipeline([("scaler", StandardScaler()), ("clf", KNeighborsClassifier(n_neighbors=5))]),
+
+        "Naive Bayes": GaussianNB(),
     }
 
 
