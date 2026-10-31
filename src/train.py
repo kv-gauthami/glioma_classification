@@ -24,6 +24,7 @@ TRAIN_PATH = os.path.join(ROOT_DIR, "data", "train.csv")
 TEST_PATH = os.path.join(ROOT_DIR, "test_data.csv")
 MODEL_DIR = os.path.join(ROOT_DIR, "model")
 RESULTS_DIR = os.path.join(ROOT_DIR, "results")
+from sklearn.svm import SVC
 
 RANDOM_STATE = 5157   
 
@@ -47,6 +48,11 @@ def build_models():
         "KNN": Pipeline([("scaler", StandardScaler()), ("clf", KNeighborsClassifier(n_neighbors=5))]),
 
         "Naive Bayes": GaussianNB(),
+
+        "SVM": Pipeline([
+            ("scaler", StandardScaler()),
+            ("clf", SVC(kernel="rbf", probability=True, random_state=RANDOM_STATE)),
+]),
     }
 
 
