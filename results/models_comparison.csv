@@ -1,0 +1,2 @@
+ML Model Name,Accuracy,AUC,Precision,Recall,F1,MCC
+Logistic Regression,0.8988,0.9363,0.875,0.8873,0.8811,0.7931
