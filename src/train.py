@@ -10,6 +10,8 @@ import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier 
+
 
 from data_loader import TARGET_COL
 from metrics import evaluate_model
@@ -20,8 +22,6 @@ TRAIN_PATH = os.path.join(ROOT_DIR, "data", "train.csv")
 TEST_PATH = os.path.join(ROOT_DIR, "test_data.csv")
 MODEL_DIR = os.path.join(ROOT_DIR, "model")
 RESULTS_DIR = os.path.join(ROOT_DIR, "results")
-os.makedirs(MODEL_DIR, exist_ok=True)
-os.makedirs(RESULTS_DIR, exist_ok=True)
 
 RANDOM_STATE = 5157   
 
@@ -37,7 +37,11 @@ def build_models():
         "Logistic Regression": Pipeline([
             ("scaler", StandardScaler()),
             ("clf", LogisticRegression(max_iter=1000, random_state=RANDOM_STATE)),
+
+        
         ]),
+        "Decision Tree": DecisionTreeClassifier(random_state=RANDOM_STATE),
+
     }
 
 
