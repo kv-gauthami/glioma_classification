@@ -1,0 +1,19 @@
+{
+  "Logistic Regression": {
+    "clf__C": 0.1
+  },
+  "Decision Tree": {
+    "criterion": "gini",
+    "max_depth": 2,
+    "min_samples_leaf": 1
+  },
+  "KNN": {
+    "clf__n_neighbors": 9,
+    "clf__p": 1,
+    "clf__weights": "uniform"
+  },
+  "SVM": {
+    "clf__C": 10,
+    "clf__gamma": 0.001
+  }
+}
