@@ -139,3 +139,26 @@ with tab_single:
                                        target_names=CLASS_LABELS,
                                        output_dict=True, zero_division=0)
         st.dataframe(pd.DataFrame(report).T.round(3), width='stretch')
+
+
+# ---------------------------------------------------------------------------
+# 5. Compare all five models on the same uploaded data
+# ---------------------------------------------------------------------------
+with tab_compare:
+    st.subheader("All models on the uploaded test data")
+    rows = [{"Model": name, **evaluate_model(m, X, y)} for name, m in models.items()]
+    cmp_df = pd.DataFrame(rows).set_index("Model").round(4)
+    st.dataframe(cmp_df, width='stretch')
+
+    best = cmp_df["MCC"].idxmax()
+    st.markdown(f"**Best model by MCC:** {best} ({cmp_df.loc[best, 'MCC']:.3f})")
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    cmp_df.plot(kind="bar", ax=ax, rot=0)
+    ax.set_ylim(0, 1)
+    ax.set_ylabel("Score")
+    ax.legend(loc="lower right", ncol=6, fontsize=8)
+    ax.set_title("Metric comparison across models")
+    fig.tight_layout()
+    st.pyplot(fig)
+    plt.close(fig)
