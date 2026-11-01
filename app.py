@@ -89,7 +89,7 @@ with st.sidebar:
 # 3. Validate the uploaded file
 # ---------------------------------------------------------------------------
 if uploaded is None:
-    st.info("👈 Upload a test CSV from the sidebar to begin "
+    st.info("Upload a test CSV from the sidebar to begin "
             "(or download the sample file first).")
     st.stop()
 
@@ -109,3 +109,33 @@ if y.nunique() < 2:
 
 st.success(f"Loaded {len(df)} patients "
            f"({(y == 0).sum()} LGG, {(y == 1).sum()} GBM).")
+
+tab_single, tab_compare, tab_data = st.tabs(
+    ["📊 Selected model", "🏆 Compare all models", "🔍 Data preview"]
+)
+
+# ---------------------------------------------------------------------------
+# 4. Selected model: metrics, confusion matrix, classification report
+# ---------------------------------------------------------------------------
+with tab_single:
+    model = models[model_name]
+    scores = evaluate_model(model, X, y)
+    y_pred = model.predict(X)
+
+    st.subheader(f"{model_name}: evaluation metrics")
+    cols = st.columns(6)
+    for col, (metric, value) in zip(cols, scores.items()):
+        col.metric(metric, f"{value:.3f}")
+
+    left, right = st.columns(2)
+    with left:
+        st.markdown("**Confusion matrix**")
+        fig = plot_confusion_matrix(y, y_pred, model_name)
+        st.pyplot(fig)
+        plt.close(fig)
+    with right:
+        st.markdown("**Classification report**")
+        report = classification_report(y, y_pred, labels=[0, 1],
+                                       target_names=CLASS_LABELS,
+                                       output_dict=True, zero_division=0)
+        st.dataframe(pd.DataFrame(report).T.round(3), width='stretch')
