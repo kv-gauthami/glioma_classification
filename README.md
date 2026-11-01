@@ -1,8 +1,6 @@
 # Glioma Grade Classification (LGG vs GBM)
 
 **Live app:** https://gliomaclassification-2026ak05157.streamlit.app/
-**GitHub repository:** https://github.com/kv-gauthami/glioma_classification
-
 ---
 
 ## a. Problem Statement
