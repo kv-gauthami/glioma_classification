@@ -38,6 +38,15 @@ MODEL_FILES = {
 
 st.set_page_config(page_title="Glioma Grade Classifier", page_icon="🧠", layout="wide")
 
+with st.expander("ℹ️ About this project"):
+    st.markdown(
+        "- **Data:** 839 TCGA glioma patients (UCI ML Repository)\n"
+        "- **Features:** age, gender + 20 gene-mutation flags\n"
+        "- **Models:** Logistic Regression, Decision Tree, KNN, "
+        "Gaussian Naive Bayes, SVM\n"
+        "- Hyperparameters tuned with 5-fold cross-validation\n"
+    )
+
 
 @st.cache_resource
 def load_models():
@@ -165,7 +174,15 @@ with tab_compare:
     st.subheader("All models on the uploaded test data")
     rows = [{"Model": name, **evaluate_model(m, X, y)} for name, m in models.items()]
     cmp_df = pd.DataFrame(rows).set_index("Model").round(4)
-    st.dataframe(cmp_df, width='stretch')
+    # st.dataframe(cmp_df, width='stretch')
+    st.dataframe(
+    cmp_df,
+    width='stretch',
+    column_config={
+        m: st.column_config.ProgressColumn(m, min_value=0.0, max_value=1.0, format="%.3f")
+        for m in cmp_df.columns
+    },
+    )
 
     best = cmp_df["MCC"].idxmax()
     st.markdown(f"**Best model by MCC:** {best} ({cmp_df.loc[best, 'MCC']:.3f})")
