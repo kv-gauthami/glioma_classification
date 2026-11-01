@@ -140,6 +140,23 @@ with tab_single:
                                        output_dict=True, zero_division=0)
         st.dataframe(pd.DataFrame(report).T.round(3), width='stretch')
 
+    # ---- Per-patient predictions ----
+    pred_df = df.copy()
+    pred_df["Predicted"] = [CLASS_LABELS[p] for p in y_pred]
+    pred_df["Actual"] = [CLASS_LABELS[a] for a in y]
+    pred_df["P(GBM)"] = model.predict_proba(X)[:, 1].round(3)
+
+    with st.expander("Per-patient predictions"):
+        only_errors = st.checkbox("Show only misclassified patients")
+        view = pred_df[pred_df["Predicted"] != pred_df["Actual"]] if only_errors else pred_df
+        st.caption(f"Showing {len(view)} of {len(pred_df)} patients")
+        st.dataframe(view[["Age_at_diagnosis", "Actual", "Predicted", "P(GBM)"]],
+                     width='stretch')
+        st.download_button("Download predictions",
+                           pred_df.to_csv(index=False).encode(),
+                           file_name=f"predictions_{model_name.lower().replace(' ', '_')}.csv",
+                           mime="text/csv")
+
 
 # ---------------------------------------------------------------------------
 # 5. Compare all five models on the same uploaded data
