@@ -85,3 +85,27 @@ with st.sidebar:
     st.divider()
     st.caption("Positive class = GBM (1). Precision/Recall/F1 are reported for GBM.")
 
+# ---------------------------------------------------------------------------
+# 3. Validate the uploaded file
+# ---------------------------------------------------------------------------
+if uploaded is None:
+    st.info("👈 Upload a test CSV from the sidebar to begin "
+            "(or download the sample file first).")
+    st.stop()
+
+df = pd.read_csv(uploaded)
+
+missing = [c for c in FEATURE_COLS + [TARGET_COL] if c not in df.columns]
+if missing:
+    st.error(f"The uploaded file is missing required columns: {missing}")
+    st.stop()
+
+X = df[FEATURE_COLS]            # same column order as during training
+y = df[TARGET_COL]
+
+if y.nunique() < 2:
+    st.error("The test data must contain both classes (LGG and GBM) to compute AUC and MCC.")
+    st.stop()
+
+st.success(f"Loaded {len(df)} patients "
+           f"({(y == 0).sum()} LGG, {(y == 1).sum()} GBM).")
