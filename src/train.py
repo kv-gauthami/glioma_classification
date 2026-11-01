@@ -82,7 +82,7 @@ def main():
         print(f"Trained and saved: {name}")
 
     results_df = pd.DataFrame(results).round(4)
-    results_df.to_csv(os.path.join(RESULTS_DIR, "models_comparison.csv"), index=False)
+    results_df.to_csv(os.path.join(RESULTS_DIR, "hyperparameters_tunes_models_comparison.csv"), index=False)
     print("\n", results_df.to_string(index=False))
 
 
