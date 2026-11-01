@@ -39,20 +39,28 @@ def build_models():
     return {
         "Logistic Regression": Pipeline([
             ("scaler", StandardScaler()),
-            ("clf", LogisticRegression(max_iter=1000, random_state=RANDOM_STATE)),
+            ("clf", LogisticRegression(C=0.1, max_iter=1000, random_state=RANDOM_STATE)),
 
         
         ]),
-        "Decision Tree": DecisionTreeClassifier(random_state=RANDOM_STATE),
+        "Decision Tree": DecisionTreeClassifier(
+            criterion="gini", max_depth=2, min_samples_leaf=1,
+            random_state=RANDOM_STATE,
+        ),
 
-        "KNN": Pipeline([("scaler", StandardScaler()), ("clf", KNeighborsClassifier(n_neighbors=5))]),
+        "KNN": Pipeline([
+            ("scaler", StandardScaler()),
+            ("clf", KNeighborsClassifier(n_neighbors=9, p=1, weights="uniform")),
+
+        ]),  
 
         "Naive Bayes": GaussianNB(),
 
         "SVM": Pipeline([
             ("scaler", StandardScaler()),
-            ("clf", SVC(kernel="rbf", probability=True, random_state=RANDOM_STATE)),
-]),
+            ("clf", SVC(kernel="rbf", C=10, gamma=0.001,
+                        probability=True, random_state=RANDOM_STATE)),
+        ]),
     }
 
 
