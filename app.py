@@ -162,3 +162,11 @@ with tab_compare:
     fig.tight_layout()
     st.pyplot(fig)
     plt.close(fig)
+
+# ---------------------------------------------------------------------------
+# 6. Data preview
+# ---------------------------------------------------------------------------
+with tab_data:
+    st.subheader("Uploaded data")
+    st.dataframe(df.head(20), width='stretch')
+    st.caption(f"Showing first 20 of {len(df)} rows · {len(FEATURE_COLS)} features used by the models.")
