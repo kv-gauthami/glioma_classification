@@ -475,22 +475,24 @@ def plot_class_distribution(y_true):
         .value_counts()
         .reindex(CLASS_LABELS, fill_value=0)
     )
-    fig, ax = plt.subplots(figsize=(5.2, 3.6))
+    fig, ax = plt.subplots(figsize=(5.2, 4.2))  # same size as the confusion matrix
     fig.patch.set_facecolor("#FFFFFF")
+    ax.set_facecolor("#FFFFFF")
     bars = ax.bar(
         counts.index,
         counts.values,
-        color=["#91A9BD", "#477A5D"],
+        color=["#73816F", "#263C32"],  # LGG = soft eucalyptus, GBM = app green
         width=0.58,
     )
-    ax.bar_label(bars, padding=4, fontsize=10, color="#526353")
-    ax.set_ylabel("Number of patients", color="#526353")
-    ax.set_xlabel("")
-    ax.set_title("Class distribution", fontsize=12, fontweight="bold", color="#28372D")
+    ax.bar_label(bars, padding=4, fontsize=11, fontweight="bold", color="#263C32")
+    ax.set_ylabel("Number of patients", color="#526353", labelpad=10)
+    ax.set_xlabel("Glioma grade", color="#526353", labelpad=10)
+    ax.set_title("Class distribution", fontsize=12, fontweight="bold", color="#28372D", pad=14)
+    ax.set_ylim(0, counts.max() * 1.15)  # headroom for the bar labels
     ax.spines[["top", "right"]].set_visible(False)
     ax.spines[["left", "bottom"]].set_color("#D9DDD0")
     ax.tick_params(colors="#647264")
-    ax.grid(axis="y", alpha=0.18)
+    ax.grid(axis="y", color="#D9DDD0", alpha=0.45)
     ax.set_axisbelow(True)
     fig.tight_layout()
     return fig
@@ -770,7 +772,7 @@ if page == "01 · Evaluation":
     st.divider()
     st.markdown("#### Classification diagnostics")
 
-    left, right = st.columns([1.05, 0.95])
+    left, right = st.columns([1.00, 1.00])
     with left:
         st.markdown("**Confusion matrix**")
         cm_fig = plot_confusion_matrix(y, y_pred, selected_model_name)
