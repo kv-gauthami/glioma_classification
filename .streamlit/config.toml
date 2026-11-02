@@ -1,6 +1,6 @@
 [theme]
 primaryColor = "#0fb5c1"              # teal: buttons, selected tab, sliders
-backgroundColor = "#c8c8c050"
+backgroundColor = "#c8c8c0"
 secondaryBackgroundColor = "#0f71879e"  # sidebar and input boxes
 textColor = "#1F2937"
 font = "serif"
