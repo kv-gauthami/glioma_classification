@@ -1,6 +1,7 @@
 # Glioma Grade Classification (LGG vs GBM)
 
-**Live Streamlit App:** <add link>
+**Live Streamlit App:** https://gliomaclassification-2026ak05157.streamlit.app/
+**Repository:**  https://github.com/kv-gauthami/glioma_classification/tree/main
 
 ---
 
@@ -46,7 +47,7 @@ Five classifiers are trained on the same data, evaluated on six metrics, and dep
 
 ## c. GitHub Repository
 
-**Link:** <add link>
+**Link:** https://github.com/kv-gauthami/glioma_classification
 
 ```
 glioma_classification/
@@ -74,7 +75,7 @@ glioma_classification/
 
 ## d. Models Used
 
-Models: Logistic Regression, Decision Tree, K-Nearest Neighbors, Gaussian Naive Bayes, Support Vector Machine. All metrics are computed on the held-out test set (168 patients). For Precision, Recall and F1, the positive class is GBM (1). Model settings and supporting tables are in [Additional Details](#additional-details).
+Models: Logistic Regression, Decision Tree, K-Nearest Neighbors, Gaussian Naive Bayes, Support Vector Machine. All metrics are computed on the held-out test set (168 patients). For Precision, Recall and F1, the positive class is GBM (1). 
 
 ### Comparison Table
 
@@ -90,50 +91,14 @@ Models: Logistic Regression, Decision Tree, K-Nearest Neighbors, Gaussian Naive 
 
 | ML Model Name | Observation about model performance |
 |---|---|
-| Logistic Regression | Highest score on all six metrics (Accuracy 0.911, MCC 0.820). Fewest total errors (15) and fewest missed GBM cases (5 of 71). Tuning selected stronger regularisation (C = 0.1), raising MCC from 0.793 to 0.820. |
+| Logistic Regression | Highest score on all six metrics (Recall 0.929, MCC 0.820). Fewest total errors (15) and fewest missed GBM cases (5 of 71). Tuning selected stronger regularisation (C = 0.1), raising MCC from 0.793 to 0.820. |
 | Decision Tree | Largest gain from tuning: MCC rose from 0.484 (no depth limit, overfitting) to 0.785 with max_depth = 2. Lowest AUC (0.896), because a depth-2 tree has at most 4 leaves and so outputs only a few distinct probability values, which limits ranking ability. |
 | KNN | Improved with tuning (MCC 0.657 to 0.744) using k = 9 and Manhattan distance. Lowest Recall (0.859): it missed the most GBM cases (10 of 71). Its errors are the most evenly split between the two classes (11 LGG predicted as GBM, 10 GBM predicted as LGG). |
 | Naive Bayes | High Recall (0.915) but lowest Precision (0.774), from 19 false GBM predictions, the most of any model. Lowest Accuracy (0.851) and MCC (0.711). Gaussian NB models each feature as normally distributed within each class, but 20 of the 22 features are binary (0/1), so this assumption does not fit most of the data. |
 | Support Vector Machine | Second best overall (Accuracy 0.899, MCC 0.796), with 17 total errors, 2 more than Logistic Regression. Tuning selected a very small gamma (0.001), under which the RBF kernel behaves close to a linear model; this is consistent with its results being close to those of Logistic Regression. |
 | **Overall, Winner for your dataset?** | **Logistic Regression:** best on every metric, fewest total errors, and fewest missed GBM cases, which is the most critical error for this problem. Its margin over SVM is small (2 fewer errors out of 168 test patients). |
 
----
 
-## Additional Details
-
-**Model settings** (hyperparameters tuned with 5-fold CV; see Dataset Description, step 5):
-
-| ML Model Name | Implementation | Hyperparameters |
-|---|---|---|
-| Logistic Regression | StandardScaler + LogisticRegression | C = 0.1 |
-| Decision Tree | DecisionTreeClassifier | max_depth = 2, criterion = gini |
-| KNN | StandardScaler + KNeighborsClassifier | k = 9, Manhattan distance (p = 1) |
-| Naive Bayes | GaussianNB | defaults |
-| Support Vector Machine | StandardScaler + SVC (RBF kernel) | C = 10, gamma = 0.001 |
-
-Gaussian Naive Bayes was used instead of Multinomial, because the features are a continuous variable and binary flags, not count data.
-
-**Confusion matrix summary** (test set: 97 LGG, 71 GBM):
-
-| ML Model Name | LGG predicted as GBM | GBM predicted as LGG | Total errors |
-|---|---|---|---|
-| Logistic Regression | 10 | 5 | 15 |
-| Decision Tree | 12 | 6 | 18 |
-| KNN | 11 | 10 | 21 |
-| Naive Bayes | 19 | 6 | 25 |
-| Support Vector Machine | 11 | 6 | 17 |
-
-**Effect of tuning** (test MCC):
-
-| ML Model Name | Default | Tuned |
-|---|---|---|
-| Logistic Regression | 0.7931 | 0.8203 |
-| Decision Tree | 0.4844 | 0.7850 |
-| KNN | 0.6574 | 0.7444 |
-| Naive Bayes | 0.7109 | 0.7109 (not tuned) |
-| Support Vector Machine | 0.7850 | 0.7960 |
-
----
 
 ## Streamlit App
 
