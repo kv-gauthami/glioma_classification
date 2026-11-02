@@ -1,6 +1,6 @@
 """
 GliomaLab — Interactive Glioma Grade Classification Workbench
-Evaluates five pre-trained classifiers (LGG vs GBM) on an uploaded CSV.
+Evaluates five pre-trained classifiers (LGG vs GBM) on the official test CSV.
 No model training or retraining is performed in this application.
 """
 
@@ -346,48 +346,101 @@ for model_name, model in models.items():
 # ---------------------------------------------------------------------
 # 4. Helper functions
 # ---------------------------------------------------------------------
-def validate_dataset(data):
-    """Return an error message if the uploaded CSV is not evaluation-ready."""
-    if data.empty:
-        return "The uploaded CSV contains no rows."
+def validate_dataset(data, reference_data=None):
+    """
+    Validate that the uploaded CSV is the official test dataset.
+
+    Returns
+    -------
+    (error_message, cleaned_df)
+        error_message is None when the data is valid.
+        cleaned_df contains only the required columns, in the exact
+        order the models were trained on (features first, then Grade).
+    """
+    if data is None or data.empty:
+        return "The uploaded CSV contains no rows.", None
 
     required_cols = FEATURE_COLS + [TARGET_COL]
+
+    # ---------------------------------------------------------------
+    # 1. Required columns must be present.
+    #    Column order does not matter, and extra columns such as an
+    #    'Unnamed: 0' index column are ignored.
+    # ---------------------------------------------------------------
     missing_cols = [col for col in required_cols if col not in data.columns]
     if missing_cols:
-        return f"Missing required columns: {missing_cols}"
+        return (
+            f"Invalid test dataset. Missing required columns: {missing_cols}",
+            None,
+        )
 
-    # Convert a copy of the feature columns to numeric for validation.
+    # ---------------------------------------------------------------
+    # 2. Align to the exact training order.
+    # ---------------------------------------------------------------
+    data = data[required_cols].reset_index(drop=True)
+
+    # ---------------------------------------------------------------
+    # 3. The data must match the official test dataset.
+    # ---------------------------------------------------------------
+    if reference_data is not None:
+        ref_missing = [col for col in required_cols if col not in reference_data.columns]
+        if ref_missing:
+            return (
+                f"The reference test_data.csv is missing columns: {ref_missing}",
+                None,
+            )
+
+        reference = reference_data[required_cols].reset_index(drop=True)
+
+        if len(data) != len(reference):
+            return (
+                "Invalid dataset. Please upload the provided test_data.csv file. "
+                f"The uploaded file contains {len(data):,} rows, but the official "
+                f"test dataset contains {len(reference):,} rows.",
+                None,
+            )
+
+        if not data.equals(reference):
+            return (
+                "Invalid dataset. This application only accepts the provided "
+                "test_data.csv file. The uploaded file does not match the "
+                "official test dataset.",
+                None,
+            )
+
+    # ---------------------------------------------------------------
+    # 4. Feature values must be numeric and finite.
+    # ---------------------------------------------------------------
     try:
         numeric_features = data[FEATURE_COLS].apply(pd.to_numeric, errors="raise")
     except (ValueError, TypeError):
-        return "All model input features must contain numeric values."
-
-    if numeric_features.isna().any().any():
-        cols = numeric_features.columns[numeric_features.isna().any()].tolist()
-        return f"Missing values found in feature columns: {cols}"
+        return "Feature columns must contain numeric values.", None
 
     if not np.isfinite(numeric_features.to_numpy(dtype=float)).all():
-        return "Infinite or non-finite values were found in the feature columns."
+        return "Infinite or non-finite values were found in the feature columns.", None
 
+    # ---------------------------------------------------------------
+    # 5. Grade must be 0/1 and contain both classes.
+    # ---------------------------------------------------------------
     if data[TARGET_COL].isna().any():
-        return "The Grade column contains missing values."
+        return "The Grade column contains missing values.", None
 
-    # Accept integer-like 0/1 values, but reject unexpected labels.
     try:
         target_numeric = pd.to_numeric(data[TARGET_COL], errors="raise")
     except (ValueError, TypeError):
-        return "Grade must be encoded numerically: 0 = LGG and 1 = GBM."
+        return "Grade must be encoded numerically: 0 = LGG and 1 = GBM.", None
 
     if not set(target_numeric.unique()).issubset({0, 1}):
-        return "Invalid Grade values. Expected only 0 (LGG) and 1 (GBM)."
+        return "Invalid Grade values. Expected only 0 (LGG) and 1 (GBM).", None
 
     if target_numeric.nunique() < 2:
         return (
-            "The test dataset must contain both classes (LGG and GBM) "
-            "to calculate the full set of evaluation metrics."
+            "The test dataset must contain both classes (LGG and GBM) to "
+            "calculate the full set of evaluation metrics.",
+            None,
         )
 
-    return None
+    return None, data
 
 
 def plot_confusion_matrix(y_true, y_pred, title):
@@ -465,11 +518,10 @@ def metric_value(value):
         return str(value)
 
 
-
 # ---------------------------------------------------------------------
 # 5. Sidebar
 # ---------------------------------------------------------------------
-# Initialize dataset-selection variables before entering the sidebar block.
+# Initialise dataset-selection variables before entering the sidebar block.
 # Streamlit reruns this script from top to bottom on every interaction, so these
 # variables must always exist before they are referenced later in the app.
 df = None
@@ -493,44 +545,34 @@ with st.sidebar:
             "Prepared test dataset",
             "Upload my own CSV",
         ],
-        index=0,
+        index=None,
     )
 
     if dataset_source == "Prepared test dataset":
-
         if os.path.isfile(SAMPLE_PATH):
             try:
                 df = pd.read_csv(SAMPLE_PATH)
-                st.sidebar.success("Test dataset loaded successfully")
-                st.sidebar.caption(
-                    f"{len(df)} patient records available"
-                )
+                st.success("Test dataset loaded successfully")
+                st.caption(f"{len(df)} patient records available")
             except Exception as e:
-                st.sidebar.error(f"Could not read test dataset: {e}")
-
+                st.error(f"Could not read test dataset: {e}")
         else:
-            st.sidebar.error(
-                "test_data.csv not found. "
-                "Place it in the project folder."
-            )
+            st.error("test_data.csv not found. Place it in the project folder.")
 
-    # Alternative: user uploads their own dataset
-    else:
+    elif dataset_source == "Upload my own CSV":
         uploaded_file = st.file_uploader(
             "Import evaluation dataset",
             type=["csv"],
-            help="CSV containing all model features and the Grade target column.",
+            help="Upload the provided test_data.csv file.",
         )
 
         if uploaded_file is not None:
             try:
                 df = pd.read_csv(uploaded_file)
-                st.sidebar.success("Custom dataset uploaded")
-                st.sidebar.caption(
-                    f"{len(df)} patient records available"
-                )
+                st.success("CSV uploaded")
+                st.caption(f"{len(df)} patient records found")
             except Exception as e:
-                st.sidebar.error(f"Could not read uploaded CSV: {e}")
+                st.error(f"Could not read uploaded CSV: {e}")
 
     # Sample dataset download
     if os.path.isfile(SAMPLE_PATH):
@@ -569,7 +611,6 @@ st.markdown(
     """
     <div class="brand-row">
         <div class="brand-name">GLIOMALAB<span style="color:#789477">.</span></div>
-        
     </div>
     <div class="hero-panel">
         <div class="eyebrow">MACHINE LEARNING CLASSIFICATION STUDY</div>
@@ -591,7 +632,7 @@ with st.expander("About"):
         st.markdown(
             """
             **Dataset**
-            - 839 TCGA glioma patients 
+            - 839 TCGA glioma patients
             - UCI Machine Learning Repository
             - Target: `Grade` (0 = LGG, 1 = GBM)
             """
@@ -605,59 +646,49 @@ with st.expander("About"):
             - K-Nearest Neighbors
             - Gaussian Naive Bayes
             - Support Vector Machine
-
             """
         )
 
 # ---------------------------------------------------------------------
 # 7. Data validation
 # ---------------------------------------------------------------------
-
-# Select the correct dataset
-if dataset_source == "Prepared test dataset":
-
-    if df is None:
+if df is None:
+    if dataset_source == "Prepared test dataset":
         st.error(
             "Prepared test dataset is unavailable. "
             "Please check whether test_data.csv exists."
         )
-        st.stop()
-
-    raw_df = df.copy()
-
-else:
-
-    # The uploaded CSV has already been read into `df` in the sidebar.
-    # Do not reference/re-read `uploaded_file` here; using `df` also makes
-    # the data flow robust across Streamlit reruns.
-    if df is None:
+    else:
         st.info(
-            "Please upload a labelled CSV file using the sidebar "
+            "Please upload the provided test_data.csv using the sidebar "
             "to begin model evaluation."
         )
-        st.stop()
+    st.stop()
 
-    raw_df = df.copy()
+raw_df = df.copy()
 
+# Load the official test dataset as the validation reference.
+reference_test_df = None
+if os.path.isfile(SAMPLE_PATH):
+    try:
+        reference_test_df = pd.read_csv(SAMPLE_PATH)
+    except Exception:
+        reference_test_df = None
 
-# Validate the selected dataset
-validation_error = validate_dataset(raw_df)
+validation_error, clean_df = validate_dataset(
+    raw_df,
+    reference_data=reference_test_df,
+)
 
 if validation_error:
     st.error(validation_error)
     st.stop()
 
-
-# Prepare evaluation data
-df = raw_df.copy()
+# Prepare evaluation data (columns are now in the exact training order).
+df = clean_df
 
 X = df[FEATURE_COLS].apply(pd.to_numeric, errors="raise")
-
-y = pd.to_numeric(
-    df[TARGET_COL],
-    errors="raise"
-).astype(int)
-
+y = pd.to_numeric(df[TARGET_COL], errors="raise").astype(int)
 
 # Dataset statistics
 n_patients = len(df)
@@ -676,7 +707,7 @@ st.markdown(
 
 snapshot_cols = st.columns(4)
 snapshot_items = [
-    ("PATIENT RECORDS", f"{n_patients:,}", "Uploaded observations"),
+    ("PATIENT RECORDS", f"{n_patients:,}", "Test observations"),
     ("LGG CASES", f"{n_lgg:,}", f"{n_lgg / n_patients:.1%} of cohort"),
     ("GBM CASES", f"{n_gbm:,}", f"{n_gbm / n_patients:.1%} of cohort"),
     ("MODEL FEATURES", str(len(FEATURE_COLS)), "Features passed to classifiers"),
@@ -725,7 +756,7 @@ if page == "01 · Evaluation":
     st.markdown('<div class="section-kicker">MODULE 01 / CLASSIFIER PERFORMANCE</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="section-heading">{selected_model_name}</div>', unsafe_allow_html=True)
     st.markdown(
-        '<p class="section-subtitle">Performance metrics calculated on the currently uploaded labelled dataset.</p>',
+        '<p class="section-subtitle">Performance metrics calculated on the official labelled test dataset.</p>',
         unsafe_allow_html=True,
     )
 
@@ -748,18 +779,11 @@ if page == "01 · Evaluation":
         st.caption("Rows = actual class · Columns = predicted class")
 
     with right:
-        st.markdown("**Classification report**")
-        report = classification_report(
-            y,
-            y_pred,
-            labels=[0, 1],
-            target_names=CLASS_LABELS,
-            output_dict=True,
-            zero_division=0,
-        )
-        report_df = pd.DataFrame(report).T
-        st.dataframe(report_df.round(3), use_container_width=True)
-        st.caption("Per-class precision, recall and F1-score.")
+        st.markdown("**Class distribution**")
+        distribution_fig = plot_class_distribution(y)
+        st.pyplot(distribution_fig, use_container_width=True)
+        plt.close(distribution_fig)
+        st.caption("Number of patients in each glioma grade.")
 
     st.markdown("")
     st.markdown("#### Error profile")
@@ -767,20 +791,9 @@ if page == "01 · Evaluation":
     tn, fp, fn, tp = cm.ravel()
     err1, err2, err3, err4 = st.columns(4)
     err1.metric("Correct LGG (TN)", f"{tn:,}")
-    err2.metric("LGG predicted as GBM (FP)", f"{fp:,}")
-    err3.metric("GBM predicted as LGG (FN)", f"{fn:,}")
+    err2.metric("LGG pred as GBM (FP)", f"{fp:,}")
+    err3.metric("GBM pred as LGG (FN)", f"{fn:,}")
     err4.metric("Correct GBM (TP)", f"{tp:,}")
-
-    # st.markdown(
-    #     """
-    #     <div class="research-note">
-    #         <strong>Interpretation note:</strong> a false negative (FN) is a GBM
-    #         case predicted as LGG; a false positive (FP) is an LGG case predicted
-    #         as GBM. Review both error types rather than relying on accuracy alone.
-    #     </div>
-    #     """,
-    #     unsafe_allow_html=True,
-    # )
 
     st.markdown("")
     st.divider()
@@ -848,7 +861,7 @@ elif page == "02 · Model comparison":
     st.markdown('<div class="section-kicker">MODULE 02 / MODEL COMPARISON</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-heading">Compare the five classifiers</div>', unsafe_allow_html=True)
     st.markdown(
-        '<p class="section-subtitle">Every classifier is evaluated against the same uploaded test records.</p>',
+        '<p class="section-subtitle">Every classifier is evaluated against the same test records.</p>',
         unsafe_allow_html=True,
     )
 
@@ -872,22 +885,13 @@ elif page == "02 · Model comparison":
         st.markdown(
             f"""
             <div class="research-note">
-                <strong>Top model by MCC:</strong> {best_name}
-                &nbsp;·&nbsp; MCC = {best_mcc:.4f}<br>
-                MCC ranges from -1 to +1. Matthews Correlation Coefficient,
-                considers TP, TN, FP, and FN. A higher MCC indicates stronger agreement
-                between predicted and actual classes.
+                <strong>Top model : {best_name}</strong>
+                <br>
+                {best_name} is the top performer across all metrics, including Recall, which is a key metric in disease detection.
             </div>
             """,
             unsafe_allow_html=True,
         )
-
-    # st.download_button(
-    #     "↓  Download model comparison",
-    #     data=comparison_df.to_csv().encode("utf-8"),
-    #     file_name="gliomalab_model_comparison.csv",
-    #     mime="text/csv",
-    # )
 
     st.markdown("")
     st.divider()
@@ -898,7 +902,7 @@ elif page == "02 · Model comparison":
         if comparison_df[col].notna().any()
     ]
     default_metrics = [
-        metric for metric in ["Accuracy", "Precision", "Recall", "F1", "AUC", "MCC"]
+        metric for metric in ["Accuracy", "Recall", "Precision", "F1", "AUC", "MCC"]
         if metric in available_metrics
     ][:6]
 
@@ -909,7 +913,6 @@ elif page == "02 · Model comparison":
     )
 
     if chosen_metrics:
-        # Subtle GliomaLab colour palette
         theme_colours = [
             "#527968",  # Forest green
             "#789482",  # Sage green
@@ -919,17 +922,25 @@ elif page == "02 · Model comparison":
             "#9A8575",  # Muted taupe
         ]
 
-        fig, ax = plt.subplots(figsize=(10.5, 4.8))
+        fig, ax = plt.subplots(figsize=(10.5, 5.0))
         fig.patch.set_facecolor("#FFFFFF")
         ax.set_facecolor("#FFFFFF")
 
-        comparison_df[chosen_metrics].plot(
+        plot_data = comparison_df[chosen_metrics]
+
+        plot_data.plot(
             kind="bar",
             ax=ax,
             width=0.76,
             color=theme_colours[:len(chosen_metrics)],
             edgecolor="none",
         )
+
+        # Zoom the Y-axis so differences between models are visible.
+        min_value = float(plot_data.min().min())
+        y_min = max(0.0, min_value - 0.08)
+        y_min = np.floor(y_min * 10) / 10
+        ax.set_ylim(y_min, 1.0)
 
         ax.set_title(
             "Classifier performance across selected metrics",
@@ -938,20 +949,21 @@ elif page == "02 · Model comparison":
             color="#28372D",
             pad=14,
         )
-        ax.set_ylabel("Metric score", color="#526353")
+        ax.set_ylabel("Metric score", color="#526353", fontsize=10)
         ax.set_xlabel("")
         ax.tick_params(axis="x", rotation=0, colors="#526353")
         ax.tick_params(axis="y", colors="#526353")
+        ax.yaxis.set_major_locator(plt.MultipleLocator(0.05))
         ax.grid(axis="y", color="#D9DDD0", alpha=0.45, linewidth=0.8)
         ax.set_axisbelow(True)
-
         ax.spines[["top", "right"]].set_visible(False)
         ax.spines[["left", "bottom"]].set_color("#D9DDD0")
-
         ax.legend(
             frameon=False,
             ncol=min(6, len(chosen_metrics)),
             labelcolor="#526353",
+            loc="upper center",
+            bbox_to_anchor=(0.5, 0.96),
         )
 
         fig.tight_layout()
@@ -967,7 +979,7 @@ elif page == "02 · Model comparison":
 # ---------------------------------------------------------------------
 elif page == "03 · Patient explorer":
     st.markdown('<div class="section-kicker">MODULE 03 / COHORT INSPECTION</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-heading">Explore the uploaded cohort</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-heading">Explore the test cohort</div>', unsafe_allow_html=True)
     st.markdown(
         '<p class="section-subtitle">Overview of the patient data</p>',
         unsafe_allow_html=True,
@@ -1007,11 +1019,9 @@ elif page == "03 · Patient explorer":
         )
 
     st.divider()
-    st.markdown("#### Uploaded data preview")
+    st.markdown("#### Data preview")
     st.dataframe(df.head(25), use_container_width=True, hide_index=True)
-    st.caption(
-        f"Showing the first {min(25, n_patients)} of {n_patients:,} records. "
-    )
+    st.caption(f"Showing the first {min(25, n_patients)} of {n_patients:,} records.")
 
 
 # ---------------------------------------------------------------------
