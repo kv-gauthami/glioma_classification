@@ -102,8 +102,8 @@ Models: Logistic Regression, Decision Tree, K-Nearest Neighbors, Gaussian Naive 
 
 ## Streamlit App
 
-- **Required features:** CSV upload of test data · model selection dropdown · display of all 6 evaluation metrics · confusion matrix and classification report
-- **Additional features:** input validation · warning if uploaded rows overlap with the training data · sample test-data download · per-patient predictions with a filter for misclassified patients · comparison of all 5 models with a chart · data preview
+- **Required features:** CSV upload of test data; model selection dropdown ; display of all 6 evaluation metrics; confusion matrix and classification report
+- **Additional features:** input validation; comparison of all 5 models with a chart; warning if uploaded rows overlap with the training data; sample test-data download ; per-patient predictions with a filter for misclassified patients ; data preview
 - The app loads the saved models from `model/` and **does not retrain** on uploaded data.
 
 ## How to Run Locally
@@ -114,6 +114,4 @@ python src/preprocess.py
 python src/train.py
 streamlit run app.py
 ```
-## Reference
 
-Tasci, E., Camphausen, K., Krauze, A., & Zhuge, Y. (2022). *Glioma Grading Clinical and Mutation Features* [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5R62J
