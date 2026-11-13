@@ -282,21 +282,25 @@ st.markdown(
     }
 
     /* Hide Streamlit's top header and toolbar */
+
+
+    /* Adjust the content spacing after hiding the header */
+    .stMainBlockContainer {
+        padding-top: 1.5rem;
+    }
+    /* Keep header transparent so the sidebar toggle button remains visible */
     [data-testid="stHeader"] {
-        display: none;
+        background: transparent;
     }
 
-    [data-testid="stToolbar"] {
+    /* Hide the Deploy button and three-dot menu on the top right */
+    .stAppDeployButton,
+    [data-testid="stMainMenu"] {
         display: none;
     }
 
     [data-testid="stDecoration"] {
         display: none;
-    }
-
-    /* Adjust the content spacing after hiding the header */
-    .stMainBlockContainer {
-        padding-top: 1.5rem;
     }
 
     </style>
